@@ -33,13 +33,13 @@
  * 全局中断优先级的高低：串口 > (按键) > sd卡 > 摄像头场中断   
  */
  
-#define IP_ADDRESS "172.21.30.1";
+#define IP_ADDRESS "10.0.23.67";
 
 extern volatile uint8_t Ov7725_vsync ;
 extern char serverIpAddress[20];
 extern char *pIpAddress;
 volatile uint8_t screen_flag;
-char * pStr;
+
 
 void LcdAndSD_Init()
 {
@@ -118,21 +118,58 @@ void showVideo(void)
 
 void WifiPrepare()
 {
+	// 液晶初始化
+	LCD_Init();
+	// 设置液晶扫描方向为 左上角->右下角
+	Lcd_GramScan( 1 );
+	LCD_Clear(0, 0, 240, 320, BACKGROUND);
+	
 	pIpAddress = IP_ADDRESS;
 	strcpy ( serverIpAddress, ( const char * ) pIpAddress );
 	WiFi_Config();
 	SysTick_Init();
 }
 
+char* getRealRecv(char *pStr)
+{
+	char *pBuf, *ppStr, *pStrDelimiter[2];
+	int uc = 0;
+	char cStrInput [100];
+	sprintf(cStrInput, "%s", pStr);
+    pBuf = cStrInput;
+		uc = 0;
+		while ( ( ppStr = strtok ( pBuf, ":" ) ) != NULL )
+		{
+			pStrDelimiter [ uc ++ ] = ppStr;
+			pBuf = NULL;
+		} 
+	return pStrDelimiter[1];
+}
+
 int main()
 {
-
-	USART1_Config();
+	char * pStr;
+	
 //	showVideo();
 	WifiPrepare();
 	ESP8266_STA_TCP_Client();
-//	pStr = ESP8266_ReceiveString ( ENABLE );
-//	PC_Usart("%s", pStr);
+	ESP8266_Connect_Tcp();
+	// 发送测试数据
+	ESP8266_SendString(DISABLE, "HELLO WORLD\r\n", strlen("HELLO WORLD\r\n"), Multiple_ID_0);
+	while(1)
+	{
+		pStr = NULL;
+		pStr = getRealRecv( ESP8266_ReceiveString ( DISABLE ) );
+		PC_Usart("origin: %s\r\n", pStr);
+		if(strcmp("hello1",pStr)==0)
+		{
+			PC_Usart("receive hello1\r\n");
+		} else
+		{
+			PC_Usart("receive hello\r\n");
+		}
+	}
+
 //	LCD_Clear(0, 0, 240, 320, BACKGROUND);	
 //	LCD_DispStr(0, 220, (uint8_t *) pStr, 0xffff);
 

@@ -35,6 +35,7 @@ void        ESP8266_StaTcpClient_ApTcpServer    ( void );
 bool 				ESP8266_Return_At										( void );
 bool 				ESP8266_Disable_UnvarnishSend				( void );
 bool 				ESP8266_Tcp_Close										( void );
+bool 				ESP8266_Connect_Tcp								 	( void );
 
 #endif    /* __WIFI_FUNCTION_H */
 

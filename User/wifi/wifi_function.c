@@ -204,7 +204,7 @@ bool ESP8266_Tcp_Close (void)
 {
 	char cStr [20];
 	
-	sprintf ( cStr, "AT+CIPCLOSE");
+	sprintf ( cStr, "AT+CIPCLOSE=0");
 	
 	return ESP8266_Cmd ( cStr, "OK", 0, 500 );
 	
@@ -411,6 +411,23 @@ char * ESP8266_ReceiveString ( FunctionalState enumEnUnvarnishTx )
 	
 }
 
+bool ESP8266_Connect_Tcp(void)
+{
+	bool status = false;
+	// 连接到TCP服务器
+	ESP8266_Enable_MultipleId ( ENABLE );
+	LCD_DispStr(0,120,(uint8_t *)"begin to connect the server ...",BLUE);
+	status = ESP8266_Link_Server ( enumTCP, serverIpAddress, "9998", Multiple_ID_0 );
+	if (status == true)
+	{
+		LCD_DispStr(0,140,(uint8_t *)"connect server success",0xffff);
+	} else
+	{
+		LCD_DispStr(0,140,(uint8_t *)"connect server fail",0xffff);
+	}
+	return status;
+}
+
 /*
  * 函数名：ESP8266_STA_TCP_Client
  * 描述  ：WF-ESP8266模块进行STA TCP Clien测试
@@ -420,19 +437,11 @@ char * ESP8266_ReceiveString ( FunctionalState enumEnUnvarnishTx )
  */
 bool ESP8266_STA_TCP_Client ( void )
 {
-	char *pStr;
 	bool statusCur = false;
 	bool statusLst = true;
 
-	// 液晶初始化
-	LCD_Init();
-	// 设置液晶扫描方向为 左上角->右下角
-	Lcd_GramScan( 1 );
-	LCD_Clear(0, 0, 240, 320, BACKGROUND);
-
 	// 开启sta连接模式
-	LCD_DispStr(0,0,(uint8_t *)"begin to sta connection ...",BLUE);
-	ESP8266_Choose ( ENABLE );	
+	LCD_DispStr(0,0,(uint8_t *)"begin to sta connection ...",BLUE);	
 	ESP8266_AT_Test ();
 	statusCur = ESP8266_Net_Mode_Choose ( STA );
 	if (statusCur == true)
@@ -457,45 +466,5 @@ bool ESP8266_STA_TCP_Client ( void )
 		LCD_DispStr(0,60,(uint8_t *)"join ERIC_LAI success",0xffff);
 		statusLst = false;
 	}
-
-	// 连接到TCP服务器
-	LCD_DispStr(0,120,(uint8_t *)"begin to connect the server ...",BLUE);
-	statusCur = ESP8266_Link_Server ( enumTCP, serverIpAddress, "9998", Single_ID );
-	if (statusCur == true && statusLst == true)
-	{
-		LCD_DispStr(0,140,(uint8_t *)"connect server success",0xffff);
-		statusLst = true;
-	} else
-	{
-		LCD_DispStr(0,140,(uint8_t *)"connect server fail",0xffff);
-		statusLst = false;
-	}
-	
-	// 开启透传模式下的数据传输
-	LCD_DispStr(0,160,(uint8_t *)"open the send data function ...",BLUE);
-	statusCur = ESP8266_UnvarnishSend();
-	if (statusCur == true && statusLst == true)
-	{
-		LCD_DispStr(0,180,(uint8_t *)"you can send data now",0xffff);
-		// 发送测试数据
-		ESP8266_SendString(ENABLE, "HELLO WORLD\r\n", NULL, Single_ID);
 		//USART_DMACmd(USART2, USART_DMAReq_Rx, ENABLE);
-		pStr = ESP8266_ReceiveString ( ENABLE );
-		PC_Usart("%s", pStr);
-		ESP8266_Return_At();
-		ESP8266_Disable_UnvarnishSend();
-		ESP8266_Tcp_Close();
-		statusLst = true;
-	} else
-	{
-		LCD_DispStr(0,180,(uint8_t *)"send data function fail",0xffff);
-		statusLst = false;
-	}
-	
-	// 设置返回
-	if (statusLst == true) 
-	{
-		return true;
-	}
-	return false;
 }
